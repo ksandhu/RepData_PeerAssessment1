@@ -1,25 +1,101 @@
 ---
 title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
 ---
 
+Loading data
+```{r, echo=TRUE}
+df = read.csv(file="activity.csv", header=TRUE)
+head(df)
+#df$date = as.Date(df$date)
+#str(df)
+```
+  
+Preprocessing data in order to have Dates as columns
+```{r, echo=TRUE}
+df.new = NULL
+date.label = NULL
+for(i in as.character(unique(df$date)))
+{
+  date.label = c(date.label, i)
+  df.new = cbind(df.new, df$steps[which(df$date==i)])
+}
+colnames(df.new) <- date.label
+df.new[1:4,1:4]
+```
+  
+Frequency of number of steps in an interval of 5 minutes  
+```{r, echo=TRUE}
+hist(df.new, xlab="No. of steps in an interval of 5 minutes", ylab="Frequency")
+```
 
-## Loading and preprocessing the data
+Mean  
+```{r, echo=TRUE}
+as.matrix(apply(df.new, 2, function(x) round(mean(x,na.rm=TRUE),digits = 2)))
+```
 
+Median  
+```{r, echo=TRUE}
+as.matrix(apply(df.new, 2, function(x) round(median(x,na.rm=TRUE),digits = 2)))
+```
+  
+Time-Series plot of 5 minute interval. For each interval, number of steps are averaged across all days
+```{r, echo=TRUE}
+meanVal = apply(df.new, 1, mean, na.rm=TRUE)
+plot(x=1:length(meanVal), meanVal, type="l", col="red", xlab="Time points (5 minute Interval)", ylab="Avg. steps acoss days", xaxt="n")
+axis(1, at = 1:length(meanVal), labels = seq(from=0, to=(length(meanVal)*5-1), by=5))
+```
+  
+Number of steps are at peak at `r which.max(meanVal)`th interval. This can be observed from the time-series plot also.
+  
+Total number of rows with missing "steps" data
+```{r, echo=TRUE}
+length(which(is.na(df$steps)))
+```
+  
+It would be good to fill these missing values. Among the suggested methods, replacing NA's with the mean of interval across all the days looks most reliable.
+  
+Iterating row wise and replacing any NA with the row mean
+```{r, echo=TRUE}
+df.new.noNA = df.new
+for(j in 1:nrow(df.new.noNA))
+{
+  df.new.noNA[j,][is.na(df.new.noNA[j,])]=meanVal[j]
+}
+df.new.noNA[1:4,1:4]
+```
+  
+Frequency of number of steps in an interval of 5 minutes (After replacing missing values)  
+```{r, echo=TRUE}
+hist(df.new.noNA, xlab="No. of steps in an interval of 5 minutes", ylab="Frequency")
+```
 
+Mean (After replacing missing values)  
+```{r, echo=TRUE}
+as.matrix(apply(df.new.noNA, 2, function(x) round(mean(x,na.rm=TRUE),digits = 2)))
+```
 
-## What is mean total number of steps taken per day?
+Median (After replacing missing values)  
+```{r, echo=TRUE}
+as.matrix(apply(df.new.noNA, 2, function(x) round(median(x,na.rm=TRUE),digits = 2)))
+```
+  
+Comparing Means, before and after fixing missing values
+```{r, echo=TRUE}
+meanBefore = as.matrix(apply(df.new, 2, function(x) round(mean(x,na.rm=TRUE),digits = 2)))
+meanAfter = as.matrix(apply(df.new.noNA, 2, function(x) round(mean(x,na.rm=TRUE),digits = 2)))
+plot(meanBefore, col="red", pch=1, xlab="Days", ylab="Means (Before and After)", ylim=c(0,100))
+points(meanAfter, col="blue", pch=18)
+legend(50,100,legend = c("Before", "After"), col = c("red","blue"), pch = c(1,18))
+```
 
-
-
-## What is the average daily activity pattern?
-
-
-
-## Imputing missing values
-
-
-
-## Are there differences in activity patterns between weekdays and weekends?
+As observed in the plot, there is no change in the means of number of steps per day. Which means, no error/artifacts are intoduced. Only difference observed is the columns which had no data earlier now have some data.
+  
+  
+Adding weekday/weekend information in the original data
+```{r, echo=TRUE}
+df = cbind(df, weekdays(as.Date(df$date)))
+x = apply(df, 1, function(x) if(x[4]=="Saturday"|x[4]=="Sunday"){return("Weekend")}else{return("Weekday")})
+df = cbind(df,x)
+colnames(df)[4:5] <- c("Day","Day Category")
+head(df)
+```
