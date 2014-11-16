@@ -99,3 +99,18 @@ df = cbind(df,x)
 colnames(df)[4:5] <- c("Day","Day Category")
 head(df)
 ```
+  
+Since, I am working with the processed data (df.new and df.new.noNA). I will use day information with the same.
+```{r, echo=TRUE}
+days <- weekdays(as.Date(colnames(df.new.noNA)))
+weekendIndex <- which(days=="Saturday"|days=="Sunday")
+weekdayIndex <- which(days!="Saturday"&days!="Sunday")
+
+meanValWeekday = apply(df.new.noNA[,weekdayIndex], 1, mean, na.rm=TRUE)
+meanValWeekend = apply(df.new.noNA[,weekendIndex], 1, mean, na.rm=TRUE)
+par(mfrow=c(2,1))
+plot(x=1:length(meanValWeekday), meanValWeekday, type="l", col="blue", xlab="Time points (5 minute Interval)", ylab="Avg. steps acoss Weekdays", xaxt="n", ylim=c(0,250))
+axis(1, at = 1:length(meanValWeekday), labels = seq(from=0, to=(length(meanValWeekday)*5-1), by=5))
+plot(x=1:length(meanValWeekend), meanValWeekend, type="l", col="blue", xlab="Time points (5 minute Interval)", ylab="Avg. steps acoss Weekends", xaxt="n", ylim=c(0,250))
+axis(1, at = 1:length(meanValWeekend), labels = seq(from=0, to=(length(meanValWeekend)*5-1), by=5))
+```
